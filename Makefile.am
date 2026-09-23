@@ -1,4 +1,11 @@
-SUBDIRS = cJSON rtaudio rtmidi mopo src po doc
+if BUILD_DOC
+DOC_SUBDIR = doc
+else
+DOC_SUBDIR =
+endif
+
+SUBDIRS = cJSON rtaudio rtmidi mopo src po $(DOC_SUBDIR)
+DIST_SUBDIRS = cJSON rtaudio rtmidi mopo src po doc
 EXTRA_DIST = config.rpath patches
 
 patchesdir = $(pkgdatadir)/patches

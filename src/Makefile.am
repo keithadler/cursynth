@@ -10,7 +10,8 @@ cursynth_SOURCES = main.cpp \
                    cursynth_common.h \
                    cursynth_engine.h \
                    cursynth_gui.h \
-                   cursynth_strings.h
+                   cursynth_strings.h \
+                   nls.h
 
 cursynth_CPPFLAGS = -I. \
                     -I.. \
@@ -18,8 +19,6 @@ cursynth_CPPFLAGS = -I. \
                     -I$(top_srcdir)/rtaudio \
                     -I$(top_srcdir)/rtmidi \
                     -I$(top_srcdir)/mopo/src \
-                    -I$(top_srcdir)/mopo/src \
-										-I/usr/local/opt/gettext/include \
                     -DPATCHES_DIRECTORY=\"$(patchesdir)\"
 
 cursynth_LDADD = ../cJSON/libcJSON.a \

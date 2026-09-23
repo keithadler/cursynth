@@ -15,11 +15,51 @@ AC_PROG_INSTALL
 AC_PROG_RANLIB
 AM_PROG_CC_C_O
 AM_PROG_AR
+# gettext is installed off the default include path on macOS, and where it
+# lives depends on the processor: Homebrew moved from /usr/local to
+# /opt/homebrew when Apple Silicon arrived. cursynth used to hard code the old
+# path, which is why it stopped building on every Mac sold after 2020 and why
+# "cannot find libintl.h" is the most reported problem in its history. Look for
+# it instead, and carry on without it if it is not there.
+AC_ARG_WITH([gettext-prefix],
+  [AS_HELP_STRING([--with-gettext-prefix=DIR],
+                  [directory where gettext is installed])],
+  [cursynth_gettext_prefix="$withval"],
+  [cursynth_gettext_prefix=auto])
+
+AC_MSG_CHECKING([where to find libintl.h])
+AC_PREPROC_IFELSE([AC_LANG_SOURCE([[#include <libintl.h>]])],
+  [AC_MSG_RESULT([the default include path])],
+  [cursynth_intl_dir=""
+   if test "x$cursynth_gettext_prefix" != xauto; then
+     cursynth_intl_search="$cursynth_gettext_prefix"
+   else
+     cursynth_intl_search=""
+     if brew --prefix gettext >/dev/null 2>&1; then
+       cursynth_intl_search="`brew --prefix gettext 2>/dev/null`"
+     fi
+     cursynth_intl_search="$cursynth_intl_search /opt/homebrew/opt/gettext \
+                           /usr/local/opt/gettext /opt/local /usr/pkg"
+   fi
+   for cursynth_d in $cursynth_intl_search; do
+     if test -f "$cursynth_d/include/libintl.h"; then
+       cursynth_intl_dir="$cursynth_d"
+       break
+     fi
+   done
+   if test -n "$cursynth_intl_dir"; then
+     CPPFLAGS="$CPPFLAGS -I$cursynth_intl_dir/include"
+     LDFLAGS="$LDFLAGS -L$cursynth_intl_dir/lib"
+     AC_MSG_RESULT([$cursynth_intl_dir])
+   else
+     AC_MSG_RESULT([nowhere; building without translation])
+   fi])
+
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.18.3])
 
 # Checks for libraries.
-AC_CHECK_LIB([intl], [gettext])
+AS_IF([test "x$USE_NLS" = xyes], [AC_CHECK_LIB([intl], [gettext])])
 AC_CHECK_LIB([ncurses], [curs_set])
 AC_CHECK_LIB([pthread], [pthread_create])
 
@@ -145,6 +185,15 @@ AC_FUNC_ERROR_AT_LINE
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([dup2 floor gettimeofday memset modf pow rmdir strcasecmp strchr strdup strerror])
+
+# Two people reported that cursynth would not build because makeinfo was
+# missing. makeinfo builds the manual. A missing manual is a missing manual; it
+# is not a reason to refuse to build a synthesizer, so the manual is built when
+# the tool for it is present and skipped when it is not.
+AC_CHECK_PROG([CURSYNTH_MAKEINFO], [makeinfo], [yes], [no])
+AM_CONDITIONAL([BUILD_DOC], [test "x$CURSYNTH_MAKEINFO" = xyes])
+AS_IF([test "x$CURSYNTH_MAKEINFO" = xno],
+  [AC_MSG_WARN([makeinfo not found: the manual will not be built. Install texinfo if you want it.])])
 
 AC_CONFIG_SUBDIRS([mopo
                    rtaudio

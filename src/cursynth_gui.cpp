@@ -18,10 +18,10 @@
 
 #include "value.h"
 
+#include "nls.h"
+
 #include <cmath>
 #include <cstdlib>
-#include <libintl.h>
-#include <locale.h>
 #include <ncurses.h>
 #include <sstream>
 #include <unistd.h>
