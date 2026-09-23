@@ -67,7 +67,24 @@ AM_GNU_GETTEXT_VERSION([0.18.3])
 
 # Checks for libraries.
 AS_IF([test "x$USE_NLS" = xyes], [AC_CHECK_LIB([intl], [gettext])])
-AC_CHECK_LIB([ncurses], [curs_set])
+
+# Ask pkg-config where curses is rather than assuming <ncurses.h> sits on the
+# default include path. On MSYS2 it does not: the headers are under ncursesw,
+# so the build got as far as the first source file and stopped. The same is
+# true of the wide character build on several GNU/Linux distributions.
+cursynth_have_curses=no
+PKG_CHECK_MODULES([NCURSES], [ncursesw],
+  [cursynth_have_curses=yes],
+  [PKG_CHECK_MODULES([NCURSES], [ncurses],
+    [cursynth_have_curses=yes],
+    [cursynth_have_curses=no])])
+AS_IF([test "x$cursynth_have_curses" = xyes],
+  [CPPFLAGS="$CPPFLAGS $NCURSES_CFLAGS"
+   LIBS="$LIBS $NCURSES_LIBS"],
+  [AC_CHECK_LIB([ncurses], [curs_set], [],
+     [AC_MSG_ERROR([cursynth needs ncurses. Install libncurses-dev, or
+                    mingw-w64-x86_64-ncurses on MSYS2.])])])
+
 AC_CHECK_LIB([pthread], [pthread_create])
 
 # Checks for header files.

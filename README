@@ -24,6 +24,11 @@ nobody had mentioned:
   macOS, with Homebrew:
     brew install automake autoconf pkg-config gettext
 
+  Windows, in an MSYS2 MINGW64 shell:
+    pacman -S base-devel autoconf automake gettext-devel \
+              mingw-w64-x86_64-gcc mingw-w64-x86_64-pkgconf \
+              mingw-w64-x86_64-ncurses mingw-w64-x86_64-gettext
+
 Two more are optional and the build says so rather than stopping:
 
   lv2-dev   (Debian, Ubuntu) or  brew install lv2      builds the LV2 plugin
