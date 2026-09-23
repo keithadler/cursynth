@@ -57,10 +57,13 @@ cursynth [--buffer-size OR -b preferred-buffer-size]
 
 ### Requirements:
 * OS: Mac OSX or GNU/Linux
-* Terminal: a color enabled terminal with minimum 120x44 ascii characters
+* Terminal: a color enabled terminal, at least 120x44 characters. Anything
+  smaller is refused with a message saying so, rather than drawn half off the
+  screen. Making the display work in less room is still to do.
 * If you want key up events, you have to use a MIDI keyboard
 
 ### TODO:
+* A display that fits in a terminal smaller than 120x44
 * More modulation sources and destinations
 * Routable Envelopes
 * On startup select audio output device

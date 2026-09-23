@@ -50,7 +50,21 @@ namespace mopo {
       CursynthGui() : control_index_(0) { }
 
       // Start and stop the GUI.
-      void start();
+      /* False when the terminal is too small to draw on, having already said
+       * so and put the terminal back as it found it. */
+      bool start();
+
+      /* The size the display needs, so a caller can say what is wrong without
+       * knowing how the screen is laid out. */
+      static int neededWidth();
+      static int neededHeight();
+
+      /* True when there is room to draw. Checked again after a resize, since
+       * a window can be made smaller while the program is running. */
+      static bool fits();
+
+      /* Fills the screen with the reason there is nothing else on it. */
+      void drawTooSmall() const;
       void stop();
       void redrawBase();
 

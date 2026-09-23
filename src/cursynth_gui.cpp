@@ -20,8 +20,10 @@
 
 #include "nls.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <ncurses.h>
 #include <sstream>
 #include <unistd.h>
@@ -345,7 +347,39 @@ namespace mopo {
     drawStatus(status.str());
   }
 
-  void CursynthGui::start() {
+  int CursynthGui::neededWidth() { return WIDTH; }
+
+  int CursynthGui::neededHeight() { return HEIGHT; }
+
+  bool CursynthGui::fits() { return COLS >= WIDTH && LINES >= HEIGHT; }
+
+  /* A terminal too small for the display used to get the display anyway.
+   * curses drops whatever falls outside the screen without complaining, so
+   * what came up was a scattering of half drawn controls and no hint that the
+   * size was the problem. Saying so is not the same as fitting in less room,
+   * but it is the difference between a program that looks broken and one that
+   * tells you what it needs. */
+  void CursynthGui::drawTooSmall() const {
+    erase();
+    const char* line1 = "cursynth needs a bigger terminal";
+    char line2[80], line3[80];
+    snprintf(line2, sizeof line2, "it needs %d by %d, and this one is %d by %d",
+             WIDTH, HEIGHT, COLS, LINES);
+    snprintf(line3, sizeof line3, "%s",
+             "make the window bigger, or make the font smaller");
+    const int mid = LINES / 2;
+    if (mid - 1 >= 0 && COLS > 0) {
+      mvprintw(mid - 1, std::max(0, (COLS - (int)strlen(line1)) / 2), "%.*s",
+               COLS, line1);
+      mvprintw(mid, std::max(0, (COLS - (int)strlen(line2)) / 2), "%.*s",
+               COLS, line2);
+      mvprintw(mid + 1, std::max(0, (COLS - (int)strlen(line3)) / 2), "%.*s",
+               COLS, line3);
+    }
+    refresh();
+  }
+
+  bool CursynthGui::start() {
     initscr();
     cbreak();
     noecho();
@@ -355,7 +389,20 @@ namespace mopo {
     if(has_colors() == FALSE) {
       endwin();
       printf("Your terminal does not support color\n");
-      return;
+      return false;
+    }
+
+    /* Said before anything is drawn, and with the terminal put back the way it
+     * was found, so the message survives on the screen instead of being wiped
+     * by curses on the way out. */
+    if (!fits()) {
+      const int cols = COLS, lines = LINES;
+      endwin();
+      printf("cursynth needs a terminal of at least %d by %d.\n"
+             "This one is %d by %d.\n"
+             "Make the window bigger, or make the font smaller.\n",
+             WIDTH, HEIGHT, cols, lines);
+      return false;
     }
 
     // Setup gettext for internationalization.
@@ -374,6 +421,8 @@ namespace mopo {
 
     // Start initial drawing.
     redrawBase();
+
+    return true;
   }
 
   void CursynthGui::stop() {

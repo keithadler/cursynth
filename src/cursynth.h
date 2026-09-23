@@ -40,7 +40,8 @@ namespace mopo {
       Cursynth();
 
       // Start/stop everything - UI, synth engine, input/output.
-      void start(unsigned sample_rate, unsigned buffer_size);
+      /* False when it could not start, having already said why. */
+      bool start(unsigned sample_rate, unsigned buffer_size);
       void stop();
 
       // Runs the synth engine for _n_frames_ samples and copies the output
@@ -88,7 +89,7 @@ namespace mopo {
       void setupAudio(unsigned sample_rate, unsigned buffer_size);
       void setupMidi();
       void setupControls();
-      void setupGui();
+      bool setupGui();
 
       // Clear screen and redraw GUI
       void refreshGui();

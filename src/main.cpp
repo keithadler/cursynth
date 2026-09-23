@@ -65,7 +65,10 @@ int main(int argc, char **argv) {
   }
 
   mopo::Cursynth cursynth;
-  cursynth.start(sample_rate, buffer_size);
+  /* A synth that could not put itself on the screen has not run, and should
+   * not tell a script that it did. */
+  if (!cursynth.start(sample_rate, buffer_size))
+    return EXIT_FAILURE;
 
   return 0;
 }

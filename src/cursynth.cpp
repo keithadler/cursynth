@@ -115,11 +115,16 @@ namespace mopo {
     pthread_mutex_init(&mutex_, 0);
   }
 
-  void Cursynth::start(unsigned sample_rate, unsigned buffer_size) {
+  bool Cursynth::start(unsigned sample_rate, unsigned buffer_size) {
     // Setup all callbacks.
     setupAudio(sample_rate, buffer_size);
     setupMidi();
-    setupGui();
+    if (!setupGui()) {
+      /* The screen said why. Stop rather than run an instrument nobody can
+       * see, with no way to reach the keys. */
+      stop();
+      return false;
+    }
     loadConfiguration();
 
     // Wait for computer keyboard input.
@@ -127,6 +132,7 @@ namespace mopo {
       ;
 
     stop();
+    return true;
   }
 
   void Cursynth::loadConfiguration() {
@@ -258,7 +264,12 @@ namespace mopo {
         should_redraw_control = true;
         break;
       case KEY_RESIZE:
-        refreshGui();
+        /* A window can be made smaller after it started, so the room is
+         * checked again rather than only once. */
+        if (CursynthGui::fits())
+          refreshGui();
+        else
+          gui_.drawTooSmall();
         break;
       default:
         // Check if they pressed the slider keys and change the current value.
@@ -332,8 +343,9 @@ namespace mopo {
     synth_.setBufferSize(buffer_size);
   }
 
-  void Cursynth::setupGui() {
-    gui_.start();
+  bool Cursynth::setupGui() {
+    if (!gui_.start())
+      return false;
 
     // Add the controls to the GUI for viewing.
     controls_ = synth_.getControls();
@@ -343,6 +355,8 @@ namespace mopo {
     Control* control = controls_.at(gui_.getCurrentControl());
     gui_.drawControl(control, true);
     gui_.drawControlStatus(control, false);
+
+    return true;
   }
 
   void Cursynth::refreshGui() {
