@@ -1,0 +1,76 @@
+name: build
+
+on:
+  push:
+    branches: [ main, master, revive ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux,   os: ubuntu-latest }
+          - { name: macos,   os: macos-latest }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y automake autoconf pkg-config gettext \
+            libncurses-dev libasound2-dev lv2-dev texinfo lv2-dev lilv-utils
+
+      - name: Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install automake autoconf pkg-config gettext lv2 texinfo
+
+      # This is the build a person actually types. It used to need a gettext
+      # dance and a texinfo install before it would get anywhere.
+      - name: Build the way the README says
+        run: |
+          autoreconf -i
+          ./configure
+          make -j2
+
+      - name: Test
+        run: make check || { cat tests/test-suite.log; exit 1; }
+
+      - name: The plugin describes itself correctly
+        run: |
+          if command -v lv2_validate >/dev/null 2>&1; then
+            lv2_validate lv2/cursynth.lv2/*.ttl
+          else
+            echo "lv2_validate not present, skipping"
+          fi
+
+      - name: It installs
+        run: |
+          make install DESTDIR=$PWD/staging
+          find staging -type f | sort
+
+  # The two things that stopped people building cursynth for a decade were a
+  # missing gettext and a missing texinfo. Neither should matter now, so the
+  # build is done again with both refused.
+  without-the-extras:
+    name: no gettext, no texinfo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencies, deliberately incomplete
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y automake autoconf pkg-config gettext \
+            libncurses-dev libasound2-dev
+      - name: Build with translation turned off and no manual tool
+        run: |
+          autoreconf -i
+          ./configure --disable-nls
+          make -j2
+          ./src/cursynth --version

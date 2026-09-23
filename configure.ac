@@ -216,6 +216,12 @@ AC_SUBST([LV2_MODULE_EXT])
 AS_IF([test "x$have_lv2" = xno],
   [AC_MSG_WARN([LV2 headers not found: the plugin will not be built.])])
 
+# dlopen lives in libc on some systems and libdl on others; the little LV2 host
+# in the tests needs whichever it is.
+AC_SEARCH_LIBS([dlopen], [dl dld], [LIBDL="$ac_cv_search_dlopen"], [LIBDL=])
+AS_IF([test "x$LIBDL" = "xnone required"], [LIBDL=])
+AC_SUBST([LIBDL])
+
 AC_CONFIG_SUBDIRS([mopo
                    rtaudio
                    rtmidi])
