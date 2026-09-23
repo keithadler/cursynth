@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.68])
 AC_INIT([cursynth], [1.6], [littleioaudio@gmail.com])
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src/cursynth.cpp])
 AC_CONFIG_HEADERS([config.h])
@@ -15,6 +15,13 @@ AC_PROG_INSTALL
 AC_PROG_RANLIB
 AM_PROG_CC_C_O
 AM_PROG_AR
+
+# Look for pkg-config here, at the top, rather than leaving it to be pulled in
+# by the first thing that needs it. The first thing that needed it was inside
+# the GNU/Linux branch of a case statement, so on any other system it was never
+# run and every later pkg-config check quietly answered no.
+PKG_PROG_PKG_CONFIG
+
 # gettext is installed off the default include path on macOS, and where it
 # lives depends on the processor: Homebrew moved from /usr/local to
 # /opt/homebrew when Apple Silicon arrived. cursynth used to hard code the old
@@ -195,6 +202,20 @@ AM_CONDITIONAL([BUILD_DOC], [test "x$CURSYNTH_MAKEINFO" = xyes])
 AS_IF([test "x$CURSYNTH_MAKEINFO" = xno],
   [AC_MSG_WARN([makeinfo not found: the manual will not be built. Install texinfo if you want it.])])
 
+# The LV2 plugin, which was asked for in 2014 and is still in the README's list
+# of things to do. Built when the LV2 headers are there and skipped when they
+# are not, since a missing plugin should not stop the program being built.
+PKG_CHECK_MODULES([LV2], [lv2 >= 1.10], [have_lv2=yes], [have_lv2=no])
+AM_CONDITIONAL([BUILD_LV2], [test "x$have_lv2" = xyes])
+case $host in
+  *-apple*)  LV2_MODULE_EXT=".dylib" ;;
+  *-mingw*)  LV2_MODULE_EXT=".dll" ;;
+  *)         LV2_MODULE_EXT=".so" ;;
+esac
+AC_SUBST([LV2_MODULE_EXT])
+AS_IF([test "x$have_lv2" = xno],
+  [AC_MSG_WARN([LV2 headers not found: the plugin will not be built.])])
+
 AC_CONFIG_SUBDIRS([mopo
                    rtaudio
                    rtmidi])
@@ -202,6 +223,7 @@ AC_CONFIG_SUBDIRS([mopo
 AC_CONFIG_FILES([Makefile po/Makefile.in
                  src/Makefile
                  tests/Makefile
+                 lv2/Makefile
                  cJSON/Makefile
                  doc/Makefile])
 AC_OUTPUT

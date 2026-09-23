@@ -81,6 +81,13 @@ namespace mopo {
 
       mopo_float current_value() const { return current_value_; }
 
+      /* A host that is not the terminal needs to know the range too. */
+      mopo_float min() const { return min_; }
+
+      mopo_float max() const { return max_; }
+
+      int resolution() const { return resolution_; }
+
       const Value* value() const { return value_; }
 
       bool isBipolar() const { return max_ == -min_; }

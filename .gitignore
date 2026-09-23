@@ -89,3 +89,8 @@
 /tests/*.log
 /tests/*.trs
 /test-driver
+/lv2/Makefile
+/lv2/Makefile.in
+/lv2/gen_ttl
+/lv2/cursynth.lv2/
+/lv2/*.o
