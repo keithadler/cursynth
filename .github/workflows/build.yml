@@ -92,6 +92,47 @@ jobs:
           make install DESTDIR=$PWD/staging
           find staging -type f | sort
 
+  # Issue #28, from 2022, says cursynth crashes on Windows when built with
+  # MSYS2. Nothing here has ever run there, so the first job is to find out
+  # what happens rather than to assume.
+  windows:
+    name: windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            autoconf
+            automake
+            gettext-devel
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-ncurses
+            mingw-w64-x86_64-gettext
+            mingw-w64-x86_64-lv2
+      - name: Build
+        run: |
+          autoreconf -i
+          ./configure
+          make -j2
+      - name: Test
+        run: |
+          if ! make check; then
+            [ -f tests/test-suite.log ] && cat tests/test-suite.log
+            exit 1
+          fi
+      - name: What came out
+        run: |
+          ls -l src/cursynth.exe || true
+          ls -l lv2/cursynth.lv2/ || true
+
   # The two things that stopped people building cursynth for a decade were a
   # missing gettext and a missing texinfo. Neither should matter now, so the
   # build is done again with both refused.
