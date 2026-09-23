@@ -28,6 +28,15 @@
 #include <string>
 #include <sys/stat.h>
 
+/* Making a directory takes a mode everywhere except Windows, where it takes
+ * only the name. */
+#ifdef _WIN32
+#include <direct.h>
+#define CURSYNTH_MKDIR(path) _mkdir(path)
+#else
+#define CURSYNTH_MKDIR(path) mkdir((path), 0755)
+#endif
+
 #define KEYBOARD "awsedftgyhujkolp;'"
 #define SLIDER "`1234567890"
 #define EXTENSION ".mite"
@@ -87,8 +96,11 @@ namespace {
 
   // Check if the directory _path_ exists, if not, create it.
   void confirmPathExists(std::string path) {
-    if (opendir(path.c_str()) == NULL)
-      mkdir(path.c_str(), 0755);
+    DIR* directory = opendir(path.c_str());
+    if (directory == NULL)
+      CURSYNTH_MKDIR(path.c_str());
+    else
+      closedir(directory);   /* opened only to ask whether it is there */
   }
 
   // Returns all files in directory _dir_ with extenstion _ext_.
