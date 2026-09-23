@@ -7,19 +7,37 @@ cursynth will connect to all MIDI devices and send output to the default audio
 device on your system.
 
 ### Building
-If you just want to build Cursynth, check out [ftp://ftp.gnu.org/gnu/cursynth]
-for latest source releases that don't require as much to build.
 
-If you want to develop Cursynth, this source is the right place.
-Run these commands to build the project from source:
+    $ autoreconf -i
+    $ ./configure
+    $ make
+    $ sudo make install        # optional
 
-$ autoreconf -i
-$ ./configure
-$ make
+What you need first, by name, because "it will not build" was the most common
+thing anybody ever reported about cursynth and the answer was always a package
+nobody had mentioned:
 
-And then if you want to install, next run:
+  Debian, Ubuntu:
+    sudo apt-get install build-essential automake autoconf autopoint \
+                         pkg-config gettext libncurses-dev libasound2-dev
 
-$ sudo make install
+  macOS, with Homebrew:
+    brew install automake autoconf pkg-config gettext
+
+Two more are optional and the build says so rather than stopping:
+
+  lv2-dev   (Debian, Ubuntu) or  brew install lv2      builds the LV2 plugin
+  texinfo                                              builds the manual
+
+gettext does not have to be on the default include path. configure asks
+Homebrew where it is and looks in the usual places, and takes
+--with-gettext-prefix=DIR if it still cannot find it. If you have no gettext
+at all, ./configure --disable-nls builds a cursynth that speaks English.
+
+    $ make check
+
+runs the tests: the oscillator measured by its spectrum and by its shape, and
+the LV2 plugin loaded, played and checked that it answers its controls.
 
 ### Usage
 cursynth [--buffer-size OR -b preferred-buffer-size]
@@ -43,7 +61,6 @@ cursynth [--buffer-size OR -b preferred-buffer-size]
 * If you want key up events, you have to use a MIDI keyboard
 
 ### TODO:
-* Make a LV2 plugin version of cursynth
 * More modulation sources and destinations
 * Routable Envelopes
 * On startup select audio output device

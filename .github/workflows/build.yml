@@ -24,12 +24,17 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y automake autoconf pkg-config gettext \
-            libncurses-dev libasound2-dev lv2-dev texinfo lv2-dev lilv-utils
+          # autopoint is its own package on Debian and Ubuntu, and autoreconf
+          # cannot bootstrap a project that uses gettext without it.
+          sudo apt-get install -y automake autoconf autopoint pkg-config \
+            gettext libncurses-dev libasound2-dev lv2-dev texinfo lilv-utils
 
       - name: Dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install automake autoconf pkg-config gettext lv2 texinfo
+        # lv2_validate is a shell script that calls sord_validate, which comes
+        # from a different package, so asking for one without the other gives
+        # a command that exists and cannot run.
+        run: brew install automake autoconf pkg-config gettext lv2 sord texinfo
 
       # This is the build a person actually types. It used to need a gettext
       # dance and a texinfo install before it would get anywhere.
@@ -44,10 +49,11 @@ jobs:
 
       - name: The plugin describes itself correctly
         run: |
-          if command -v lv2_validate >/dev/null 2>&1; then
+          if command -v lv2_validate >/dev/null 2>&1 && \
+             command -v sord_validate >/dev/null 2>&1; then
             lv2_validate lv2/cursynth.lv2/*.ttl
           else
-            echo "lv2_validate not present, skipping"
+            echo "lv2_validate or sord_validate not present, skipping"
           fi
 
       - name: It installs
@@ -66,8 +72,8 @@ jobs:
       - name: Dependencies, deliberately incomplete
         run: |
           sudo apt-get update
-          sudo apt-get install -y automake autoconf pkg-config gettext \
-            libncurses-dev libasound2-dev
+          sudo apt-get install -y automake autoconf autopoint pkg-config \
+            gettext libncurses-dev libasound2-dev
       - name: Build with translation turned off and no manual tool
         run: |
           autoreconf -i
