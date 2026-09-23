@@ -47,7 +47,7 @@ namespace mopo {
         CONTROL_TEXT_COLOR
       };
 
-      CursynthGui() : control_index_(0) { }
+      CursynthGui() : control_index_(0), pad_(0), pad_top_(0), pad_left_(0) { }
 
       // Start and stop the GUI.
       /* False when the terminal is too small to draw on, having already said
@@ -65,6 +65,17 @@ namespace mopo {
 
       /* Fills the screen with the reason there is nothing else on it. */
       void drawTooSmall() const;
+
+      /*
+       * Everything is drawn into a pad the size of the whole display, and what
+       * the terminal can show is a window onto it. That is what lets cursynth
+       * run in a terminal smaller than its layout: the part you are working on
+       * is brought into view instead of the rest being thrown away.
+       */
+      void showPad() const;
+
+      /* Moves the view so that a rectangle of the layout is on screen. */
+      void bringIntoView(int y, int x, int height, int width) const;
       void stop();
       void redrawBase();
 
@@ -105,6 +116,9 @@ namespace mopo {
       // Place a given control (slider only) at a location and width.
       void placeMinimalControl(std::string name, const Control* control,
                                int x, int y, int width);
+
+      WINDOW* pad_;
+      mutable int pad_top_, pad_left_;
 
       std::map<const Control*, DisplayDetails*> details_lookup_;
       std::vector<std::string> control_order_;

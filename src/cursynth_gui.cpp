@@ -33,6 +33,12 @@
 #define WIDTH 120
 #define HEIGHT 44
 
+/* The least a terminal can be and still show something worth looking at. The
+ * display is bigger than this and scrolls; these are the numbers below which
+ * there is no point trying. */
+#define MIN_WIDTH 24
+#define MIN_HEIGHT 6
+
 #define LOGO_WIDTH 44
 #define LOGO_Y 0
 #define SPACE 3
@@ -46,180 +52,180 @@
 namespace mopo {
 
   void CursynthGui::drawHelp() {
-    erase();
+    werase(pad_);
     drawLogo();
-    move(7, 41);
-    attron(A_BOLD);
-    printw(gettext("INFO"));
-    attroff(A_BOLD);
-    move(8, 43);
-    printw(gettext("version"));
-    printw(" - ");
-    printw(VERSION);
-    move(9, 43);
-    printw(gettext("website"));
-    printw(" - gnu.org/software/cursynth");
-    move(10, 43);
-    printw(gettext("contact"));
-    printw(" - ");
-    printw(PACKAGE_BUGREPORT);
-    move(12, 41);
-    attron(A_BOLD);
-    printw(gettext("CONTROLS"));
-    attroff(A_BOLD);
-    move(14, 43);
-    printw("awsedftgyhujkolp;' - ");
-    printw(gettext("a playable keyboard"));
-    move(16, 43);
-    printw("`1234567890 - ");
-    printw(gettext("a slider for the current selected control"));
-    move(18, 43);
-    printw(gettext("up/down"));
-    printw(" - ");
-    printw(gettext("previous/next control"));
-    move(20, 43);
-    printw(gettext("left/right"));
-    printw(" - ");
-    printw(gettext("decrement/increment control"));
-    move(22, 43);
-    printw(gettext("F1 (or [shift] + H)"));
-    printw(" - ");
-    printw(gettext("help/controls"));
-    move(24, 43);
-    printw(gettext("[shift] + L"));
-    printw(" - ");
-    printw(gettext("browse/load patches"));
-    move(26, 43);
-    printw(gettext("[shift] + S"));
-    printw(" - ");
-    printw(gettext("save patch"));
-    move(28, 43);
-    printw("m - ");
-    printw(gettext("arm MIDI learn"));
-    move(30, 43);
-    printw("c - ");
-    printw(gettext("erase MIDI learn"));
+    wmove(pad_, 7, 41);
+    wattron(pad_, A_BOLD);
+    wprintw(pad_, gettext("INFO"));
+    wattroff(pad_, A_BOLD);
+    wmove(pad_, 8, 43);
+    wprintw(pad_, gettext("version"));
+    wprintw(pad_, " - ");
+    wprintw(pad_, VERSION);
+    wmove(pad_, 9, 43);
+    wprintw(pad_, gettext("website"));
+    wprintw(pad_, " - gnu.org/software/cursynth");
+    wmove(pad_, 10, 43);
+    wprintw(pad_, gettext("contact"));
+    wprintw(pad_, " - ");
+    wprintw(pad_, PACKAGE_BUGREPORT);
+    wmove(pad_, 12, 41);
+    wattron(pad_, A_BOLD);
+    wprintw(pad_, gettext("CONTROLS"));
+    wattroff(pad_, A_BOLD);
+    wmove(pad_, 14, 43);
+    wprintw(pad_, "awsedftgyhujkolp;' - ");
+    wprintw(pad_, gettext("a playable keyboard"));
+    wmove(pad_, 16, 43);
+    wprintw(pad_, "`1234567890 - ");
+    wprintw(pad_, gettext("a slider for the current selected control"));
+    wmove(pad_, 18, 43);
+    wprintw(pad_, gettext("up/down"));
+    wprintw(pad_, " - ");
+    wprintw(pad_, gettext("previous/next control"));
+    wmove(pad_, 20, 43);
+    wprintw(pad_, gettext("left/right"));
+    wprintw(pad_, " - ");
+    wprintw(pad_, gettext("decrement/increment control"));
+    wmove(pad_, 22, 43);
+    wprintw(pad_, gettext("F1 (or [shift] + H)"));
+    wprintw(pad_, " - ");
+    wprintw(pad_, gettext("help/controls"));
+    wmove(pad_, 24, 43);
+    wprintw(pad_, gettext("[shift] + L"));
+    wprintw(pad_, " - ");
+    wprintw(pad_, gettext("browse/load patches"));
+    wmove(pad_, 26, 43);
+    wprintw(pad_, gettext("[shift] + S"));
+    wprintw(pad_, " - ");
+    wprintw(pad_, gettext("save patch"));
+    wmove(pad_, 28, 43);
+    wprintw(pad_, "m - ");
+    wprintw(pad_, gettext("arm MIDI learn"));
+    wmove(pad_, 30, 43);
+    wprintw(pad_, "c - ");
+    wprintw(pad_, gettext("erase MIDI learn"));
   }
 
   void CursynthGui::drawMain() {
-    erase();
+    werase(pad_);
     drawLogo();
     drawModulationMatrix();
   }
 
   void CursynthGui::drawLogo() {
-    attron(A_BOLD);
-    attron(COLOR_PAIR(LOGO_COLOR));
+    wattron(pad_, A_BOLD);
+    wattron(pad_, COLOR_PAIR(LOGO_COLOR));
     int logo_x = (WIDTH - LOGO_WIDTH) / 2 + 1;
 
-    move(LOGO_Y, logo_x);
-    printw("                                    __  __");
-    move(LOGO_Y + 1, logo_x);
-    printw("  _______  ______________  ______  / /_/ /_");
-    move(LOGO_Y + 2, logo_x);
-    printw(" / ___/ / / / ___/ ___/ / / / __ \\/ __/ __ \\");
-    move(LOGO_Y + 3, logo_x);
-    printw("/ /__/ /_/ / /  /__  / /_/ / / / / /_/ / / /");
-    move(LOGO_Y + 4, logo_x);
-    printw("\\___/\\____/_/  /____/\\__  /_/ /_/\\__/_/ /_/");
-    move(LOGO_Y + 5, logo_x);
-    printw("                    /____/");
+    wmove(pad_, LOGO_Y, logo_x);
+    wprintw(pad_, "                                    __  __");
+    wmove(pad_, LOGO_Y + 1, logo_x);
+    wprintw(pad_, "  _______  ______________  ______  / /_/ /_");
+    wmove(pad_, LOGO_Y + 2, logo_x);
+    wprintw(pad_, " / ___/ / / / ___/ ___/ / / / __ \\/ __/ __ \\");
+    wmove(pad_, LOGO_Y + 3, logo_x);
+    wprintw(pad_, "/ /__/ /_/ / /  /__  / /_/ / / / / /_/ / / /");
+    wmove(pad_, LOGO_Y + 4, logo_x);
+    wprintw(pad_, "\\___/\\____/_/  /____/\\__  /_/ /_/\\__/_/ /_/");
+    wmove(pad_, LOGO_Y + 5, logo_x);
+    wprintw(pad_, "                    /____/");
 
-    attroff(A_BOLD);
-    attroff(COLOR_PAIR(LOGO_COLOR));
+    wattroff(pad_, A_BOLD);
+    wattroff(pad_, COLOR_PAIR(LOGO_COLOR));
 
-    move(LOGO_Y + 5, logo_x + 33);
-    printw("Matt Tytel");
+    wmove(pad_, LOGO_Y + 5, logo_x + 33);
+    wprintw(pad_, "Matt Tytel");
   }
 
   void CursynthGui::drawModulationMatrix() {
-    move(34, 26);
-    attron(A_BOLD);
-    printw("----------------------------------------------------------------------");
-    move(34, 53);
-    printw(gettext("Modulation Matrix"));
-    attroff(A_BOLD);
+    wmove(pad_, 34, 26);
+    wattron(pad_, A_BOLD);
+    wprintw(pad_, "----------------------------------------------------------------------");
+    wmove(pad_, 34, 53);
+    wprintw(pad_, gettext("Modulation Matrix"));
+    wattroff(pad_, A_BOLD);
 
-    move(35, 26);
-    printw("                     ");
-    move(35, 34);
-    printw(gettext("source"));
-    move(35, 50);
-    printw("                     ");
-    move(35, 58);
-    printw(gettext("scale"));
-    move(35, 74);
-    printw("                     ");
-    move(35, 79);
-    printw(gettext("destination"));
+    wmove(pad_, 35, 26);
+    wprintw(pad_, "                     ");
+    wmove(pad_, 35, 34);
+    wprintw(pad_, gettext("source"));
+    wmove(pad_, 35, 50);
+    wprintw(pad_, "                     ");
+    wmove(pad_, 35, 58);
+    wprintw(pad_, gettext("scale"));
+    wmove(pad_, 35, 74);
+    wprintw(pad_, "                     ");
+    wmove(pad_, 35, 79);
+    wprintw(pad_, gettext("destination"));
   }
 
   void CursynthGui::drawMidi(std::string status) {
-    move(2, 2);
-    printw(gettext("MIDI Learn: "));
-    attron(A_BOLD);
-    hline(' ', MAX_STATUS_SIZE);
-    printw(status.substr(0, MAX_STATUS_SIZE).c_str());
-    attroff(A_BOLD);
-    refresh();
+    wmove(pad_, 2, 2);
+    wprintw(pad_, gettext("MIDI Learn: "));
+    wattron(pad_, A_BOLD);
+    whline(pad_, ' ', MAX_STATUS_SIZE);
+    wprintw(pad_, status.substr(0, MAX_STATUS_SIZE).c_str());
+    wattroff(pad_, A_BOLD);
+    showPad();
   }
 
   void CursynthGui::drawStatus(std::string status) {
-    move(1, 2);
-    printw(gettext("Current Value: "));
-    attron(A_BOLD);
-    hline(' ', MAX_STATUS_SIZE);
-    printw(gettext(status.substr(0, MAX_STATUS_SIZE).c_str()));
-    attroff(A_BOLD);
-    refresh();
+    wmove(pad_, 1, 2);
+    wprintw(pad_, gettext("Current Value: "));
+    wattron(pad_, A_BOLD);
+    whline(pad_, ' ', MAX_STATUS_SIZE);
+    wprintw(pad_, gettext(status.substr(0, MAX_STATUS_SIZE).c_str()));
+    wattroff(pad_, A_BOLD);
+    showPad();
   }
 
   void CursynthGui::clearPatches() {
     int selection_row = (PATCH_BROWSER_ROWS - 1) / 2;
-    move(1 + selection_row, 83);
-    hline(' ', PATCH_BROWSER_WIDTH);
+    wmove(pad_, 1 + selection_row, 83);
+    whline(pad_, ' ', PATCH_BROWSER_WIDTH);
     for (int i = 0; i < PATCH_BROWSER_ROWS; ++i) {
-      move(1 + i, 94);
-      hline(' ', PATCH_BROWSER_WIDTH);
+      wmove(pad_, 1 + i, 94);
+      whline(pad_, ' ', PATCH_BROWSER_WIDTH);
     }
   }
 
   void CursynthGui::drawPatchSaving(std::string patch_name) {
     int selection_row = (PATCH_BROWSER_ROWS - 1) / 2;
-    move(1 + selection_row, 83);
-    printw("            ");
-    hline(' ', PATCH_BROWSER_WIDTH);
-    move(1 + selection_row, 83);
-    printw(gettext("Save Patch: "));
-    printw(patch_name.c_str());
+    wmove(pad_, 1 + selection_row, 83);
+    wprintw(pad_, "            ");
+    whline(pad_, ' ', PATCH_BROWSER_WIDTH);
+    wmove(pad_, 1 + selection_row, 83);
+    wprintw(pad_, gettext("Save Patch: "));
+    wprintw(pad_, patch_name.c_str());
   }
 
   void CursynthGui::drawPatchLoading(std::vector<std::string> patches,
                                      int selected_index) {
     int selection_row = (PATCH_BROWSER_ROWS - 1) / 2;
-    move(1 + selection_row, 83);
-    printw(gettext("Load Patch:"));
+    wmove(pad_, 1 + selection_row, 83);
+    wprintw(pad_, gettext("Load Patch:"));
 
     int patch_index = selected_index - selection_row;
     int num_patches = patches.size();
     for (int i = 0; i < PATCH_BROWSER_ROWS; ++i) {
       if (i % 2)
-        attroff(COLOR_PAIR(PATCH_LOAD_COLOR));
+        wattroff(pad_, COLOR_PAIR(PATCH_LOAD_COLOR));
       else
-        attron(COLOR_PAIR(PATCH_LOAD_COLOR));
+        wattron(pad_, COLOR_PAIR(PATCH_LOAD_COLOR));
 
-      move(1 + i, 94);
-      hline(' ', PATCH_BROWSER_WIDTH);
+      wmove(pad_, 1 + i, 94);
+      whline(pad_, ' ', PATCH_BROWSER_WIDTH);
       if (patch_index == selected_index)
-        attron(A_BOLD);
+        wattron(pad_, A_BOLD);
 
       if (patch_index >= 0 && patch_index < num_patches)
-        printw(patches[patch_index].c_str());
-      attroff(A_BOLD);
+        wprintw(pad_, patches[patch_index].c_str());
+      wattroff(pad_, A_BOLD);
       patch_index++;
     }
-    attroff(COLOR_PAIR(PATCH_LOAD_COLOR));
-    refresh();
+    wattroff(pad_, COLOR_PAIR(PATCH_LOAD_COLOR));
+    showPad();
   }
 
   void CursynthGui::drawSlider(const DisplayDetails* slider,
@@ -229,46 +235,46 @@ namespace mopo {
       y += 1;
 
     // Clear slider.
-    move(y, slider->x - 1);
-    attron(COLOR_PAIR(BG_COLOR));
-    hline(' ', slider->width + 2);
+    wmove(pad_, y, slider->x - 1);
+    wattron(pad_, COLOR_PAIR(BG_COLOR));
+    whline(pad_, ' ', slider->width + 2);
 
     char slider_char = active ? '=' : ' ';
-    move(y, slider->x);
-    attron(COLOR_PAIR(SLIDER_BG_COLOR));
-    hline(slider_char, slider->width);
+    wmove(pad_, y, slider->x);
+    wattron(pad_, COLOR_PAIR(SLIDER_BG_COLOR));
+    whline(pad_, slider_char, slider->width);
 
     // If active draw a bit different.
     if (active) {
-      move(y, slider->x - 1);
-      attron(COLOR_PAIR(LOGO_COLOR));
-      hline('|', 1);
-      move(y, slider->x + slider->width);
-      hline('|', 1);
+      wmove(pad_, y, slider->x - 1);
+      wattron(pad_, COLOR_PAIR(LOGO_COLOR));
+      whline(pad_, '|', 1);
+      wmove(pad_, y, slider->x + slider->width);
+      whline(pad_, '|', 1);
     }
 
     // Find slider position.
     int position = round(slider->width * percentage);
     int slider_midpoint = (slider->width + 1) / 2;
 
-    attron(COLOR_PAIR(SLIDER_FG_COLOR));
+    wattron(pad_, COLOR_PAIR(SLIDER_FG_COLOR));
     if (slider->bipolar) {
       if (position < slider_midpoint) {
-        move(y, slider->x + position);
-        hline(' ', slider_midpoint - position);
+        wmove(pad_, y, slider->x + position);
+        whline(pad_, ' ', slider_midpoint - position);
       }
       else {
-        move(y, slider->x + slider_midpoint);
-        hline(' ', position - slider_midpoint);
+        wmove(pad_, y, slider->x + slider_midpoint);
+        whline(pad_, ' ', position - slider_midpoint);
       }
     }
     else {
-      move(y, slider->x);
-      hline(' ', position);
+      wmove(pad_, y, slider->x);
+      whline(pad_, ' ', position);
     }
 
-    attroff(COLOR_PAIR(SLIDER_FG_COLOR));
-    refresh();
+    wattroff(pad_, COLOR_PAIR(SLIDER_FG_COLOR));
+    showPad();
   }
 
   void CursynthGui::drawText(const DisplayDetails* details,
@@ -278,29 +284,29 @@ namespace mopo {
       y += 1;
 
     // Clear area.
-    move(y, details->x - 1);
-    attron(COLOR_PAIR(BG_COLOR));
-    hline(' ', details->width + 2);
-    move(y, details->x);
-    attron(COLOR_PAIR(CONTROL_TEXT_COLOR));
-    hline(' ', details->width);
+    wmove(pad_, y, details->x - 1);
+    wattron(pad_, COLOR_PAIR(BG_COLOR));
+    whline(pad_, ' ', details->width + 2);
+    wmove(pad_, y, details->x);
+    wattron(pad_, COLOR_PAIR(CONTROL_TEXT_COLOR));
+    whline(pad_, ' ', details->width);
 
     // If active draw a bit different.
     if (active) {
-      move(y, details->x - 1);
-      attron(COLOR_PAIR(LOGO_COLOR));
-      hline('|', 1);
-      move(y, details->x + details->width);
-      hline('|', 1);
-      attron(A_BOLD);
+      wmove(pad_, y, details->x - 1);
+      wattron(pad_, COLOR_PAIR(LOGO_COLOR));
+      whline(pad_, '|', 1);
+      wmove(pad_, y, details->x + details->width);
+      whline(pad_, '|', 1);
+      wattron(pad_, A_BOLD);
     }
 
     // Draw text.
-    attron(COLOR_PAIR(CONTROL_TEXT_COLOR));
-    move(y, details->x);
-    printw(gettext(text.c_str()));
-    attroff(A_BOLD);
-    attroff(COLOR_PAIR(CONTROL_TEXT_COLOR));
+    wattron(pad_, COLOR_PAIR(CONTROL_TEXT_COLOR));
+    wmove(pad_, y, details->x);
+    wprintw(pad_, gettext(text.c_str()));
+    wattroff(pad_, A_BOLD);
+    wattroff(pad_, COLOR_PAIR(CONTROL_TEXT_COLOR));
   }
 
   void CursynthGui::drawControl(const Control* control, bool active) {
@@ -308,13 +314,18 @@ namespace mopo {
     if (!details)
       return;
 
+    /* The one being changed is brought into view, along with the row above it
+     * that carries its name and the row below that carries its value. */
+    if (active)
+      bringIntoView(details->y - 1, details->x, 4, details->width);
+
     // Draw label.
     if (details->label.size()) {
       if (active)
-        attron(A_BOLD);
-      move(details->y, details->x);
-      printw(gettext(details->label.c_str()));
-      attroff(A_BOLD);
+        wattron(pad_, A_BOLD);
+      wmove(pad_, details->y, details->x);
+      wprintw(pad_, gettext(details->label.c_str()));
+      wattroff(pad_, A_BOLD);
     }
 
     // Draw status.
@@ -351,7 +362,38 @@ namespace mopo {
 
   int CursynthGui::neededHeight() { return HEIGHT; }
 
-  bool CursynthGui::fits() { return COLS >= WIDTH && LINES >= HEIGHT; }
+  /* The display is drawn at its full size whatever the terminal is, and the
+   * terminal shows as much of it as it has room for. All that is needed is
+   * enough space to see something and to read the label of what you are
+   * changing. */
+  bool CursynthGui::fits() { return COLS >= MIN_WIDTH && LINES >= MIN_HEIGHT; }
+
+  void CursynthGui::showPad() const {
+    if (pad_ == 0)
+      return;
+    const int view_h = std::min(LINES, HEIGHT);
+    const int view_w = std::min(COLS, WIDTH);
+    pad_top_ = CLAMP(pad_top_, 0, HEIGHT - view_h);
+    pad_left_ = CLAMP(pad_left_, 0, WIDTH - view_w);
+    prefresh(pad_, pad_top_, pad_left_, 0, 0, view_h - 1, view_w - 1);
+  }
+
+  /* Scrolls only as far as it has to, so the display stays where it was put
+   * whenever what you are reaching for is already on screen. */
+  void CursynthGui::bringIntoView(int y, int x, int height, int width) const {
+    const int view_h = std::min(LINES, HEIGHT);
+    const int view_w = std::min(COLS, WIDTH);
+
+    if (y < pad_top_)
+      pad_top_ = y;
+    else if (y + height > pad_top_ + view_h)
+      pad_top_ = y + height - view_h;
+
+    if (x < pad_left_)
+      pad_left_ = x;
+    else if (x + width > pad_left_ + view_w)
+      pad_left_ = x + width - view_w;
+  }
 
   /* A terminal too small for the display used to get the display anyway.
    * curses drops whatever falls outside the screen without complaining, so
@@ -401,9 +443,18 @@ namespace mopo {
       printf("cursynth needs a terminal of at least %d by %d.\n"
              "This one is %d by %d.\n"
              "Make the window bigger, or make the font smaller.\n",
-             WIDTH, HEIGHT, cols, lines);
+             MIN_WIDTH, MIN_HEIGHT, cols, lines);
       return false;
     }
+
+    /* The whole display, whatever the terminal is. */
+    pad_ = newpad(HEIGHT, WIDTH);
+    if (pad_ == 0) {
+      endwin();
+      printf("cursynth could not make room to draw in.\n");
+      return false;
+    }
+    keypad(pad_, TRUE);
 
     // Setup gettext for internationalization.
     setlocale(LC_ALL, "");
@@ -430,8 +481,8 @@ namespace mopo {
   }
 
   void CursynthGui::redrawBase() {
-    erase();
-    refresh();
+    werase(pad_);
+    showPad();
     drawLogo();
     drawModulationMatrix();
     curs_set(0);
