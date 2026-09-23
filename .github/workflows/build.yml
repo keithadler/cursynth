@@ -26,8 +26,10 @@ jobs:
           sudo apt-get update
           # autopoint is its own package on Debian and Ubuntu, and autoreconf
           # cannot bootstrap a project that uses gettext without it.
+          # sord_validate is what actually checks the plugin's description;
+          # on Debian and Ubuntu it comes from sordi, not from the LV2 package.
           sudo apt-get install -y automake autoconf autopoint pkg-config \
-            gettext libncurses-dev libasound2-dev lv2-dev texinfo lilv-utils
+            gettext libncurses-dev libasound2-dev lv2-dev texinfo sordi
 
       - name: Dependencies (macOS)
         if: runner.os == 'macOS'
@@ -53,13 +55,36 @@ jobs:
             exit 1
           fi
 
+      # A check that quietly does nothing and reports success is worse than no
+      # check, so this refuses to skip. lv2_validate is only a wrapper that
+      # hands sord_validate the installed LV2 spec along with your files, and
+      # Ubuntu ships one without the other, so fall back to doing that by hand.
       - name: The plugin describes itself correctly
         run: |
+          set -e
           if command -v lv2_validate >/dev/null 2>&1 && \
              command -v sord_validate >/dev/null 2>&1; then
+            echo "using lv2_validate"
             lv2_validate lv2/cursynth.lv2/*.ttl
+          elif command -v sord_validate >/dev/null 2>&1; then
+            echo "using sord_validate against the installed LV2 spec"
+            # lv2.pc names the spec directory itself; the usual places are
+            # only a fallback for a package that does not say.
+            LV2DIR=$(pkg-config --variable=lv2dir lv2 || true)
+            for d in "$LV2DIR" /usr/lib/lv2 /usr/local/lib/lv2; do
+              if [ -n "$d" ] && [ -d "$d" ]; then LV2DIR="$d"; break; fi
+            done
+            echo "LV2 spec in $LV2DIR"
+            SPEC=$(find "$LV2DIR" -name '*.ttl' | sort)
+            # No spec means sord_validate would check our files against
+            # nothing at all and call almost everything undefined, so the
+            # number of files found is itself worth asserting.
+            echo "$SPEC" | wc -l
+            test "$(echo "$SPEC" | wc -l)" -gt 20
+            sord_validate $SPEC lv2/cursynth.lv2/*.ttl
           else
-            echo "lv2_validate or sord_validate not present, skipping"
+            echo "no validator available; this check cannot be skipped" >&2
+            exit 1
           fi
 
       - name: It installs
