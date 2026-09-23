@@ -83,3 +83,9 @@
 /rtmidi/aclocal.m4
 /rtmidi/autom4te.cache/
 /rtmidi/config/
+/tests/Makefile
+/tests/Makefile.in
+/tests/test_wave
+/tests/*.log
+/tests/*.trs
+/test-driver

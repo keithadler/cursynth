@@ -24,90 +24,129 @@
 
 #define LOOKUP_SIZE 2048
 #define HIGH_FREQUENCY 20000
-#define MAX_HARMONICS 100
+
+/* How many partials the largest table holds. A sawtooth at 20 Hz wants a
+ * thousand of them before it runs out of room under 20 kHz, which is the
+ * lowest note anybody is going to play. */
+#define MAX_PARTIALS 1024
+
+/* Tables are spaced geometrically rather than one per partial count. Spacing
+ * them evenly meant a hundred tables that between them only reached down to
+ * 198 Hz, and every note below that fell back to a plain mathematical ramp:
+ * bright, aliasing, and audibly a different oscillator from the one an inch
+ * up the keyboard. Geometric spacing reaches 19.5 Hz in fewer tables and less
+ * memory, and the step between neighbours is about a tenth of an octave
+ * instead of the whole way down to nothing. */
+#define NUM_TABLES 64
 
 namespace mopo {
 
   class WaveLookup {
     public:
       WaveLookup() {
-        // Sin lookup table.
         for (int i = 0; i < LOOKUP_SIZE + 1; ++i)
           sin_[i] = sin((2 * PI * i) / LOOKUP_SIZE);
 
-        // Square lookup table.
-        for (int i = 0; i < LOOKUP_SIZE + 1; ++i) {
-          int p = i;
-          mopo_float scale = 4.0 / PI;
-          square_[0][i] = scale * sin_[p];
-
-          for (int h = 1; h < MAX_HARMONICS; ++h) {
-            p = (p + i) % LOOKUP_SIZE;
-            square_[h][i] = square_[h - 1][i];
-
-            if (h % 2 == 0)
-              square_[h][i] += scale * sin_[p] / (h + 1);
+        /* the ladder of partial counts, 1 up to MAX_PARTIALS */
+        for (int t = 0; t < NUM_TABLES; ++t) {
+          int n = static_cast<int>(pow(MAX_PARTIALS * 1.0,
+                                       t / (NUM_TABLES - 1.0)) + 0.5);
+          partials_[t] = n < 1 ? 1 : n;
+        }
+        /* and the reverse: how many partials you may have, which table to use.
+         * Always the largest table that stays at or under the limit, so no
+         * table can ever put a partial above where the caller said to stop. */
+        for (int want = 0; want <= MAX_PARTIALS; ++want) {
+          int chosen = 0;
+          for (int t = 0; t < NUM_TABLES; ++t) {
+            if (partials_[t] <= want)
+              chosen = t;
           }
+          table_for_[want] = static_cast<unsigned char>(chosen);
         }
 
-        // Saw lookup table.
+        /* Each table is the one before it plus the partials in between, so
+         * the whole ladder costs one pass over the partials rather than one
+         * pass per table. */
         for (int i = 0; i < LOOKUP_SIZE + 1; ++i) {
-          int index = (i + (LOOKUP_SIZE / 2)) % LOOKUP_SIZE;
-          int p = i;
-          mopo_float scale = 2.0 / PI;
-          saw_[0][index] = scale * sin_[p];
+          mopo_float square_sum = 0.0, saw_sum = 0.0, triangle_sum = 0.0;
+          int n = 1;
+          for (int t = 0; t < NUM_TABLES; ++t) {
+            for (; n <= partials_[t]; ++n) {
+              const mopo_float s = sin_[(n * i) % LOOKUP_SIZE];
 
-          for (int h = 1; h < MAX_HARMONICS; ++h) {
-            p = (p + i) % LOOKUP_SIZE;
-            mopo_float harmonic = scale * sin_[p] / (h + 1);
+              /* a saw carries every partial, alternating in sign */
+              saw_sum += (n % 2 ? s : -s) / n;
 
-            if (h % 2 == 0)
-              saw_[h][index] = saw_[h - 1][index] + harmonic;
-            else
-              saw_[h][index] = saw_[h - 1][index] - harmonic;
+              /* a square and a triangle carry only the odd ones */
+              if (n % 2) {
+                square_sum += s / n;
+                triangle_sum += ((n % 4) == 1 ? s : -s) / (n * 1.0 * n);
+              }
+            }
+            square_[t][i] = (4.0 / PI) * square_sum;
+            triangle_[t][i] = (8.0 / (PI * PI)) * triangle_sum;
+            saw_[t][(i + (LOOKUP_SIZE / 2)) % LOOKUP_SIZE] =
+                (2.0 / PI) * saw_sum;
           }
         }
+        /* the extra entry the interpolation reads off the end */
+        for (int t = 0; t < NUM_TABLES; ++t)
+          saw_[t][LOOKUP_SIZE] = saw_[t][0];
+      }
 
-        // Triangle lookup table.
-        for (int i = 0; i < LOOKUP_SIZE + 1; ++i) {
-          int p = i;
-          mopo_float scale = 8.0 / (PI * PI);
-          triangle_[0][i] = scale * sin_[p];
+      /* Which table may be used when no partial is allowed above `partials`. */
+      inline int tableFor(int partials) const {
+        if (partials >= MAX_PARTIALS)
+          return NUM_TABLES - 1;
+        if (partials < 1)
+          return 0;
+        return table_for_[partials];
+      }
 
-          for (int h = 1; h < MAX_HARMONICS; ++h) {
-            p = (p + i) % LOOKUP_SIZE;
-            triangle_[h][i] = triangle_[h - 1][i];
-            mopo_float harmonic = scale * sin_[p] / ((h + 1) * (h + 1));
-
-            if (h % 4 == 0)
-              triangle_[h][i] += harmonic;
-            else if (h % 2 == 0)
-              triangle_[h][i] -= harmonic;
+      /* Where in a table a phase lands.
+       *
+       * The phase has to be wrapped here rather than trusted. A step wave asks
+       * for the phase of a saw running several times as fast, and hands over a
+       * number as large as eight, which used to be multiplied by the table
+       * size and used as an index directly. That read thousands of entries
+       * past the end of the row, landing in the middle of a different table:
+       * not a crash, because the tables sit next to each other in one array,
+       * but the wrong waveform, and it came out as a whistle on high notes. */
+      inline int indexOf(mopo_float t, mopo_float& fractional) const {
+        double integral;
+        fractional = modf(t * LOOKUP_SIZE, &integral);
+        int index = static_cast<int>(integral) % LOOKUP_SIZE;
+        if (index < 0) {
+          index += LOOKUP_SIZE;
+          if (fractional < 0.0) {
+            fractional += 1.0;
+            index = (index + LOOKUP_SIZE - 1) % LOOKUP_SIZE;
           }
         }
+        return index;
       }
 
       inline mopo_float fullsin(mopo_float t) const {
-        double integral;
-        mopo_float fractional = modf(t * LOOKUP_SIZE, &integral);
-        int index = integral;
+        mopo_float fractional;
+        const int index = indexOf(t, fractional);
         return INTERPOLATE(sin_[index], sin_[index + 1], fractional);
       }
 
       inline mopo_float square(mopo_float t, int harmonics) const {
-        double integral;
-        mopo_float fractional = modf(t * LOOKUP_SIZE, &integral);
-        int index = integral;
-        return INTERPOLATE(square_[harmonics][index],
-                           square_[harmonics][index + 1], fractional);
+        const int tb = tableFor(harmonics + 1);
+        mopo_float fractional;
+        const int index = indexOf(t, fractional);
+        return INTERPOLATE(square_[tb][index],
+                           square_[tb][index + 1], fractional);
       }
 
       inline mopo_float upsaw(mopo_float t, int harmonics) const {
-        double integral;
-        mopo_float fractional = modf(t * LOOKUP_SIZE, &integral);
-        int index = integral;
-        return INTERPOLATE(saw_[harmonics][index],
-                           saw_[harmonics][index + 1], fractional);
+        const int tb = tableFor(harmonics + 1);
+        mopo_float fractional;
+        const int index = indexOf(t, fractional);
+        return INTERPOLATE(saw_[tb][index],
+                           saw_[tb][index + 1], fractional);
       }
 
       inline mopo_float downsaw(mopo_float t, int harmonics) const {
@@ -115,17 +154,27 @@ namespace mopo {
       }
 
       inline mopo_float triangle(mopo_float t, int harmonics) const {
-        double integral;
-        mopo_float fractional = modf(t * LOOKUP_SIZE, &integral);
-        int index = integral;
-        return INTERPOLATE(triangle_[harmonics][index],
-                           triangle_[harmonics][index + 1], fractional);
+        const int tb = tableFor(harmonics + 1);
+        mopo_float fractional;
+        const int index = indexOf(t, fractional);
+        return INTERPOLATE(triangle_[tb][index],
+                           triangle_[tb][index + 1], fractional);
       }
 
       template<size_t steps>
       inline mopo_float step(mopo_float t, int harmonics) const {
-        return (1.0 * steps) / (steps - 1) * (upsaw(t, harmonics) +
-               downsaw(steps * t, harmonics / steps) / steps);
+        /* A step wave is a saw plus a second saw running `steps` times as
+         * fast, so the fast one may only have a `steps`th as many partials.
+         * Dividing the index rather than the count left it with one partial
+         * too many, and at the top of the keyboard that one partial was above
+         * half the sample rate and folded back down as a whistle. Above
+         * 20 kHz the fast saw has nothing left to say at all. */
+        const int fast_partials = (harmonics + 1) / static_cast<int>(steps);
+        const mopo_float scale = (1.0 * steps) / (steps - 1);
+        if (fast_partials < 1)
+          return scale * upsaw(t, harmonics);
+        return scale * (upsaw(t, harmonics) +
+               downsaw(steps * t, fast_partials - 1) / steps);
       }
 
       template<size_t steps>
@@ -148,9 +197,11 @@ namespace mopo {
     private:
       // Make them 1 larger for wrapping.
       mopo_float sin_[LOOKUP_SIZE + 1];
-      mopo_float square_[MAX_HARMONICS][LOOKUP_SIZE + 1];
-      mopo_float saw_[MAX_HARMONICS][LOOKUP_SIZE + 1];
-      mopo_float triangle_[MAX_HARMONICS][LOOKUP_SIZE + 1];
+      mopo_float square_[NUM_TABLES][LOOKUP_SIZE + 1];
+      mopo_float saw_[NUM_TABLES][LOOKUP_SIZE + 1];
+      mopo_float triangle_[NUM_TABLES][LOOKUP_SIZE + 1];
+      int partials_[NUM_TABLES];
+      unsigned char table_for_[MAX_PARTIALS + 1];
   };
 
   class Wave {
@@ -176,8 +227,6 @@ namespace mopo {
         if (fabs(frequency) < 1)
           return wave(waveform, t);
         int harmonics = HIGH_FREQUENCY / fabs(frequency) - 1;
-        if (harmonics >= MAX_HARMONICS)
-          return wave(waveform, t);
 
         switch (waveform) {
           case kSin:

@@ -201,6 +201,7 @@ AC_CONFIG_SUBDIRS([mopo
 
 AC_CONFIG_FILES([Makefile po/Makefile.in
                  src/Makefile
+                 tests/Makefile
                  cJSON/Makefile
                  doc/Makefile])
 AC_OUTPUT

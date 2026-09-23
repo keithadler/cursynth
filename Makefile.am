@@ -4,8 +4,8 @@ else
 DOC_SUBDIR =
 endif
 
-SUBDIRS = cJSON rtaudio rtmidi mopo src po $(DOC_SUBDIR)
-DIST_SUBDIRS = cJSON rtaudio rtmidi mopo src po doc
+SUBDIRS = cJSON rtaudio rtmidi mopo src tests po $(DOC_SUBDIR)
+DIST_SUBDIRS = cJSON rtaudio rtmidi mopo src tests po doc
 EXTRA_DIST = config.rpath patches
 
 patchesdir = $(pkgdatadir)/patches
