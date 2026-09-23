@@ -94,3 +94,4 @@
 /lv2/gen_ttl
 /lv2/cursynth.lv2/
 /lv2/*.o
+/tests/test_lv2
