@@ -25,7 +25,27 @@
 #include <lv2/atom/atom.h>
 #include <lv2/midi/midi.h>
 #include <lv2/urid/urid.h>
+/* Loading a shared library is the one thing every system does differently.
+ * Windows has no dlfcn.h; it has LoadLibrary, which does the same job under
+ * another name. */
+#ifdef _WIN32
+#include <windows.h>
+static void* dl_open(const char* path) {
+  return reinterpret_cast<void*>(LoadLibraryA(path));
+}
+static void* dl_sym(void* handle, const char* name) {
+  return reinterpret_cast<void*>(
+      GetProcAddress(reinterpret_cast<HMODULE>(handle), name));
+}
+static const char* dl_error() { return "LoadLibrary failed"; }
+#else
 #include <dlfcn.h>
+static void* dl_open(const char* path) { return dlopen(path, RTLD_NOW); }
+static void* dl_sym(void* handle, const char* name) {
+  return dlsym(handle, name);
+}
+static const char* dl_error() { return dlerror(); }
+#endif
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -44,10 +64,10 @@ static LV2_URID map_uri(LV2_URID_Map_Handle, const char* uri) {
 
 int main(int argc, char** argv) {
   const char* so = argv[1];
-  void* lib = dlopen(so, RTLD_NOW);
-  if (!lib) { printf("dlopen failed: %s\n", dlerror()); return 1; }
+  void* lib = dl_open(so);
+  if (!lib) { printf("could not load %s: %s\n", so, dl_error()); return 1; }
   typedef const LV2_Descriptor* (*DescFn)(uint32_t);
-  DescFn get = (DescFn)dlsym(lib, "lv2_descriptor");
+  DescFn get = (DescFn)dl_sym(lib, "lv2_descriptor");
   if (!get) { printf("no lv2_descriptor\n"); return 1; }
   const LV2_Descriptor* d = get(0);
   if (!d) { printf("no descriptor 0\n"); return 1; }
