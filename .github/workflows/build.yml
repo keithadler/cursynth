@@ -45,7 +45,13 @@ jobs:
           make -j2
 
       - name: Test
-        run: make check || { cat tests/test-suite.log; exit 1; }
+        run: |
+          # Show the suite's own log when it exists; a build failure means
+          # there is no log to show and cat should not hide the real error.
+          if ! make check; then
+            [ -f tests/test-suite.log ] && cat tests/test-suite.log
+            exit 1
+          fi
 
       - name: The plugin describes itself correctly
         run: |

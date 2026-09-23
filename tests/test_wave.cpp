@@ -29,6 +29,7 @@
 #include <complex>
 #include <cstdio>
 #include <algorithm>
+#include <cstdarg>
 #include <vector>
 
 namespace {

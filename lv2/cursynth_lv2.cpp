@@ -35,6 +35,7 @@
 #include <lv2/midi/midi.h>
 #include <lv2/urid/urid.h>
 
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <vector>

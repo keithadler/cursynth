@@ -26,6 +26,7 @@
 #include <lv2/midi/midi.h>
 #include <lv2/urid/urid.h>
 #include <dlfcn.h>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
