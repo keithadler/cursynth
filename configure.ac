@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([cursynth], [1.6], [littleioaudio@gmail.com])
+AC_INIT([cursynth], [1.7.0], [https://github.com/keithadler/cursynth/issues])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AM_SILENT_RULES([yes])
 AC_CONFIG_SRCDIR([src/cursynth.cpp])

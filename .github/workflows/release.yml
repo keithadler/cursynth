@@ -1,0 +1,180 @@
+name: release
+
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux,   os: ubuntu-latest,  asset: cursynth-linux-x86_64 }
+          - { name: macos,   os: macos-latest,   asset: cursynth-macos }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y automake autoconf autopoint pkg-config \
+            gettext libncurses-dev libasound2-dev lv2-dev
+
+      - name: Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install automake autoconf pkg-config gettext lv2
+
+      # Built without translation on purpose. With it, the binary needs the
+      # gettext library at the path it was built against, which on macOS is
+      # inside Homebrew and on any machine without it is nowhere. cursynth has
+      # no translations shipped, so this costs nothing and makes a binary that
+      # runs on a machine that is not this one.
+      - name: Build
+        run: |
+          autoreconf -i
+          ./configure --disable-nls
+          make -j2
+
+      - name: Test
+        run: |
+          if ! make check; then
+            [ -f tests/test-suite.log ] && cat tests/test-suite.log
+            exit 1
+          fi
+
+      - name: Stage
+        run: |
+          set -e
+          OUT="${{ matrix.asset }}"
+          mkdir -p "$OUT"
+          cp src/cursynth "$OUT/"
+          cp -R patches "$OUT/"
+          cp README COPYING "$OUT/"
+          if [ -d lv2/cursynth.lv2 ]; then
+            cp -R lv2/cursynth.lv2 "$OUT/"
+            # debug symbols are for whoever is debugging, not for a download
+            rm -rf "$OUT"/cursynth.lv2/*.dSYM
+          fi
+          cat > "$OUT/READ-ME-FIRST.txt" <<'TXT'
+          cursynth - a polyphonic synthesizer that runs in your terminal
+
+          Run ./cursynth. The computer keys play two octaves: awsedftgyhujkolp;'
+          along the bottom, with the arrows moving between controls and left and
+          right changing the one you are on. F1 shows the rest.
+
+          The display is 120 by 44. A smaller terminal shows as much of it as
+          fits and scrolls to keep what you are changing in view.
+
+          cursynth.lv2 is the same synthesizer as a plugin. Copy it into your
+          LV2 folder, usually ~/.lv2 on GNU/Linux.
+
+          The patches folder holds the sounds it ships with. Put it where you
+          run cursynth from, or install properly with make install.
+
+          Originally by Matt Tytel. GPL-3.0-or-later.
+          Source: https://github.com/keithadler/cursynth
+          TXT
+
+      - name: Package
+        run: tar czf "${{ matrix.asset }}.tar.gz" "${{ matrix.asset }}"
+
+      - name: Upload
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}.tar.gz
+          fail_on_unmatched_files: false
+
+  windows:
+    name: windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            autoconf
+            automake
+            gettext-devel
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-ncurses
+            mingw-w64-x86_64-gettext
+            mingw-w64-x86_64-lv2
+
+      - name: Build
+        run: |
+          autoreconf -i
+          ./configure --disable-nls
+          make -j2
+
+      - name: Test
+        run: |
+          if ! make check; then
+            [ -f tests/test-suite.log ] && cat tests/test-suite.log
+            exit 1
+          fi
+
+      # An MSYS2 build reaches for DLLs that live in MSYS2, which the person
+      # downloading this does not have. Whatever the binaries actually ask for
+      # is copied in beside them, so the folder runs on a machine with nothing
+      # installed on it.
+      - name: Stage with the libraries it needs
+        run: |
+          set -e
+          OUT=cursynth-windows-x64
+          mkdir -p "$OUT"
+          cp src/cursynth.exe "$OUT/"
+          cp -R patches "$OUT/"
+          cp README COPYING "$OUT/"
+          if [ -d lv2/cursynth.lv2 ]; then
+            cp -R lv2/cursynth.lv2 "$OUT/"
+            rm -rf "$OUT"/cursynth.lv2/*.dSYM
+          fi
+          for binary in "$OUT/cursynth.exe" "$OUT"/cursynth.lv2/*.dll; do
+            [ -f "$binary" ] || continue
+            ldd "$binary" | awk '/mingw64/ {print $3}' | while read -r dll; do
+              [ -f "$dll" ] && cp -n "$dll" "$OUT/" || true
+            done
+          done
+          ls -l "$OUT"
+          cat > "$OUT/READ-ME-FIRST.txt" <<'TXT'
+          cursynth - a polyphonic synthesizer that runs in your terminal
+
+          Run cursynth.exe from a terminal. The computer keys play two octaves:
+          awsedftgyhujkolp;' along the bottom, with the arrows moving between
+          controls. F1 shows the rest.
+
+          The display is 120 by 44. A smaller terminal shows as much of it as
+          fits and scrolls to keep what you are changing in view.
+
+          The DLLs beside the program are the libraries it was built against.
+          Keep them together.
+
+          Originally by Matt Tytel. GPL-3.0-or-later.
+          Source: https://github.com/keithadler/cursynth
+          TXT
+
+      - name: Package
+        run: |
+          powershell -Command "Compress-Archive -Path cursynth-windows-x64 -DestinationPath cursynth-windows-x64.zip"
+
+      - name: Upload
+        uses: softprops/action-gh-release@v2
+        with:
+          files: cursynth-windows-x64.zip
+          fail_on_unmatched_files: false
