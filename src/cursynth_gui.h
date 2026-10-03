@@ -47,7 +47,7 @@ namespace mopo {
         CONTROL_TEXT_COLOR
       };
 
-      CursynthGui() : control_index_(0), pad_(0), pad_top_(0), pad_left_(0) { }
+      CursynthGui() : pad_(0), pad_top_(0), pad_left_(0), control_index_(0) { }
 
       // Start and stop the GUI.
       /* False when the terminal is too small to draw on, having already said

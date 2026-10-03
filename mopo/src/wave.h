@@ -304,8 +304,11 @@ namespace mopo {
       }
 
       static inline mopo_float triangle(mopo_float t) {
+        // modf and the constants are doubles, so fabs is the one that matches.
+        // fabsf narrowed the result to a float for no reason, which is the one
+        // place in this table code that threw precision away.
         double integral;
-        return fabsf(2.0f - 4.0f * modf(t + 0.75f, &integral)) - 1;
+        return fabs(2.0 - 4.0 * modf(t + 0.75, &integral)) - 1;
       }
 
       static inline mopo_float downsaw(mopo_float t) {
